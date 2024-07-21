@@ -5,6 +5,13 @@ pub struct SourceFile {
     pub file_path: String,
 }
 
+impl SourceFile {
+    pub fn decode(&self) -> Result<Decoder<BufReader<File>>, rodio::decoder::DecoderError> {
+        let buf = BufReader::new(File::open(self.file_path.clone()).unwrap());
+        Decoder::new(buf)
+    }
+}
+
 pub struct Player {
     pub sink: Sink,
 }
@@ -12,9 +19,10 @@ pub struct Player {
 impl Player {
     
     pub fn add_to_queue(&self, source: SourceFile) {
-        let buf = BufReader::new(File::open(source.file_path).unwrap());
-        let decoder = Decoder::new(buf).unwrap();
-        self.sink.append(decoder);
+        match source.decode() {
+            Ok(s) => self.sink.append(s),
+            Err(e) => eprintln!("Error adding to queue: {}", e)
+        }
     }
 
     pub fn toggle_playback(&self) {
